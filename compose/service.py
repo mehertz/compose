@@ -290,9 +290,12 @@ class Service(object):
         # auto-creating containers to satisfy the dependency.
         self.ensure_image_exists()
 
+        if number is None and 'name' not in override_options:
+            number = self._next_container_number(one_off=one_off)
+
         container_options = self._get_container_create_options(
             override_options,
-            number or self._next_container_number(one_off=one_off),
+            number,
             one_off=one_off,
             previous_container=previous_container,
         )
@@ -1471,8 +1474,10 @@ def build_mount(mount_spec):
 def build_container_labels(label_options, service_labels, number, config_hash):
     labels = dict(label_options or {})
     labels.update(label.split('=', 1) for label in service_labels)
-    labels[LABEL_CONTAINER_NUMBER] = str(number)
     labels[LABEL_VERSION] = __version__
+
+    if number:
+        labels[LABEL_CONTAINER_NUMBER] = str(number)
 
     if config_hash:
         log.debug("Added config hash: %s" % config_hash)
